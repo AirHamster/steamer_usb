@@ -1,0 +1,4 @@
+#!/bin/bash
+make
+arm-none-eabi-objcopy -O binary usb_slave.elf usb_slave.bin
+dfu-util -eD usb_slave.bin
