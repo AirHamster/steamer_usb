@@ -16,6 +16,7 @@
 #define LED GPIO15
 #define PCA_9532 0xc0
 #define CONTROL_REG 0x12
+#define ENDPOINT1 0x82
 static int tr_round = 0;
 
 /*
@@ -53,7 +54,7 @@ static const struct usb_endpoint_descriptor bulk_endp[] = {{
 }, {
   .bLength = USB_DT_ENDPOINT_SIZE,
   .bDescriptorType = USB_DT_ENDPOINT,
-  .bEndpointAddress = 0x82,
+  .bEndpointAddress = ENDPOINT1,
   .bmAttributes = USB_ENDPOINT_ATTR_BULK,
   .wMaxPacketSize = 64,
   .bInterval = 1,
@@ -164,22 +165,22 @@ static void ep1_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 	switch (buf[1]){
 		case 2:{
 		temp = i2c1_read(I2C1, PCA_9532, 2);
-  		r = usbd_ep_write_packet( usbd_dev, 0x82,&buf[2], 1);
+  		r = usbd_ep_write_packet( usbd_dev,ENDPOINT1,&temp, 1);
 		       }
 		       break;
 		case 3:{
   		temp = i2c1_read(I2C1, PCA_9532, 3); 
-  		r = usbd_ep_write_packet( usbd_dev, 0x82, &temp, 1);
+  		r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
 		       }
 		       break;
 		case 4:{
   		temp = i2c1_read(I2C1, PCA_9532, 4);
-  		r = usbd_ep_write_packet( usbd_dev, 0x82, &temp, 1);
+  		r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
 		       }
 		       break;
 		case 5:{
   		temp = i2c1_read(I2C1, PCA_9532, 5);
-  		r = usbd_ep_write_packet( usbd_dev, 0x82, &temp, 1);
+  		r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
 		       }
 		       break;
 	}
@@ -192,19 +193,19 @@ if (buf[1] >= 6)
   			temp = i2c1_read(I2C1, PCA_9532, 6);
 			temp = temp >> ((buf[2]-1) * 2);
 			temp &= 3;
-  			r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , 1 );
+  			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
 		}else if((buf[2] > 4) & (buf[2] <= 8))
 		{
   			temp = i2c1_read(I2C1, PCA_9532, 7);
 			temp = temp >> ((buf[2]-5) * 2);
 			temp &= 3;
-  			r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , 1 );
+  			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
 		}else if((buf[2] > 8) & (buf[2] <= 12))
 		{
   			temp = i2c1_read(I2C1, PCA_9532, 8);
 			temp = temp >> ((buf[2]-9) * 2);
 			temp &= 3;
-  			r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , 1 );
+  			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
 		}else
 		{
 
@@ -214,7 +215,7 @@ if (buf[1] >= 6)
   i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
   gpio_toggle(LEDPORT, LED);
   temp = i2c1_read(I2C1, PCA_9532, buf[1]);
-  r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , len );
+  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1);
 	}
   }else if (len == 4)
   {
@@ -265,10 +266,10 @@ if (buf[1] >= 6)
 	  }
   i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
   }
-  r = usbd_ep_write_packet( usbd_dev, 0x82, &message, 2 );
+  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &message, 2 );
   /* ZLP */
   if( len == 64 )
-    usbd_ep_write_packet( usbd_dev, 0x82, NULL, 0 );
+    usbd_ep_write_packet( usbd_dev, ENDPOINT1, NULL, 0 );
 
   tr_round++;
 }
