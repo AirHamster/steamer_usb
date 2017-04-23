@@ -16,20 +16,6 @@
 #define LED GPIO15
 #define PCA_9532 0xc0
 #define CONTROL_REG 0x12
-struct pca_regs
-{
-	uint8_t INPUT0;
-	uint8_t INPUT1;
-	uint8_t PSC0;
-	uint8_t PWM0;
-	uint8_t PSC1;
-	uint8_t PWM1;
-	uint8_t LS0;
-	uint8_t LS1;
-	uint8_t LS2;
-	uint8_t LS3;
-} led_driver;
-
 static int tr_round = 0;
 
 /*
@@ -169,23 +155,117 @@ static int vendorspec_control_request(usbd_device *usbd_dev,
 static void ep1_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
   (void)ep;
+  int r;
   uint8_t temp;
   uint8_t buf[64];
-
-  printf( "---------- Round %d ----------\n", tr_round );
+  char message[32] = "OK";
   int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
-  printf( "%d bytes received\n", len );
-if (buf[2] >= 6)
-	{
-  		temp = i2c1_read(I2C1, PCA_9532, buf[1]);
-		
+  if (len == 2){
+	switch (buf[1]){
+		case 2:{
+		temp = i2c1_read(I2C1, PCA_9532, 2);
+  		r = usbd_ep_write_packet( usbd_dev, 0x82,&buf[2], 1);
+		       }
+		       break;
+		case 3:{
+  		temp = i2c1_read(I2C1, PCA_9532, 3); 
+  		r = usbd_ep_write_packet( usbd_dev, 0x82, &temp, 1);
+		       }
+		       break;
+		case 4:{
+  		temp = i2c1_read(I2C1, PCA_9532, 4);
+  		r = usbd_ep_write_packet( usbd_dev, 0x82, &temp, 1);
+		       }
+		       break;
+		case 5:{
+  		temp = i2c1_read(I2C1, PCA_9532, 5);
+  		r = usbd_ep_write_packet( usbd_dev, 0x82, &temp, 1);
+		       }
+		       break;
 	}
+  }
+  if (len == 3){
+if (buf[1] >= 6)
+	{
+		if (buf[2] <= 4)
+		{
+  			temp = i2c1_read(I2C1, PCA_9532, 6);
+			temp = temp >> ((buf[2]-1) * 2);
+			temp &= 3;
+  			r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , 1 );
+		}else if((buf[2] > 4) & (buf[2] <= 8))
+		{
+  			temp = i2c1_read(I2C1, PCA_9532, 7);
+			temp = temp >> ((buf[2]-5) * 2);
+			temp &= 3;
+  			r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , 1 );
+		}else if((buf[2] > 8) & (buf[2] <= 12))
+		{
+  			temp = i2c1_read(I2C1, PCA_9532, 8);
+			temp = temp >> ((buf[2]-9) * 2);
+			temp &= 3;
+  			r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , 1 );
+		}else
+		{
+
+		}
+		
+	}else{
   i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
   gpio_toggle(LEDPORT, LED);
-  buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-  int r = usbd_ep_write_packet( usbd_dev, 0x82, buf, len );
-  printf( "Send back: %d bytes\n", r );
+  temp = i2c1_read(I2C1, PCA_9532, buf[1]);
+  r = usbd_ep_write_packet( usbd_dev, 0x82, &temp , len );
+	}
+  }else if (len == 4)
+  {
+	  if(buf[3] == 0){
+	
+	buf[1] = buf[1] + (buf[2]-1)/4;
+	if (buf[2] == 1 || buf[2] ==5 || buf[2] == 9){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0xfc;
+		buf[2] |= 2;	
+	  }else if (buf[2] == 2 || buf[2] == 6 || buf[2] == 10){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0xf3;
+		buf[2] |= 2 << 2;
+	}
+	else if (buf[2] == 3 || buf[2] == 7 || buf[2] == 11){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0xcf;
+		buf[2] |= 2 << 4;
+	}
+  	else if (buf[2] == 4 || buf[2] == 8 || buf[2] == 12){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0x3f;
+		buf[2] |= 2 << 6;
+	}
+	  }else if(buf[3] == 1){
 
+	buf[1] = buf[1] + (buf[2]-1)/4;
+	if (buf[2] == 1 || buf[2] ==5 || buf[2] == 9){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0xfc;
+		buf[2] |= 3;	
+	}else if (buf[2] == 2 || buf[2] == 6 || buf[2] == 10){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0xf3;
+		buf[2] |= 3 << 2;
+	}
+	else if (buf[2] == 3 || buf[2] == 7 || buf[2] == 11){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0xcf;
+		buf[2] |= 3 << 4;
+	}
+  	else if (buf[2] == 4 || buf[2] == 8 || buf[2] == 12){
+  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+		buf[2] &= 0x3f;
+		buf[2] |= 3 << 6;
+	}
+	  }
+  i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
+  }
+  r = usbd_ep_write_packet( usbd_dev, 0x82, &message, 2 );
   /* ZLP */
   if( len == 64 )
     usbd_ep_write_packet( usbd_dev, 0x82, NULL, 0 );
@@ -250,22 +330,11 @@ static void rcc_setup(void)
 int main(void)
 {
 	usbd_device *usbd_dev;
-	led_driver.PSC0 = 100; // 1.5Hz
-	led_driver.PWM0 = 84;	// 33%
-	led_driver.PSC1 = 100;
-	led_driver.PWM1 = 64;	//25%
-	led_driver.LS0 = 0x15;
-	led_driver.LS1 = 0xa0;
-	led_driver.LS2 = 0xfe;
-	led_driver.LS3 = 0;
-	
 	gpio_setup();
 	rcc_setup();
 	i2c1_setup();
 	
-  i2c1_write(I2C1, PCA_9532, 7, 0xfe);
-	/* i2c1_write(PCA_9532, CONTROL_REG, &led_driver.PSC0, 8); */
-			
+  /* i2c1_write(I2C1, PCA_9532, 7, 0xfe); */
 	usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
 			usb_strings, 3,usbd_control_buffer, sizeof(usbd_control_buffer));
 
