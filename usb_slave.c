@@ -17,6 +17,7 @@
 #define PCA_9532 0xc0
 #define CONTROL_REG 0x12
 #define ENDPOINT1 0x82
+#define ENDPOINT2 0x83
 static int tr_round = 0;
 
 /*
@@ -58,6 +59,13 @@ static const struct usb_endpoint_descriptor bulk_endp[] = {{
   .bmAttributes = USB_ENDPOINT_ATTR_BULK,
   .wMaxPacketSize = 64,
   .bInterval = 1,
+}, {
+  .bLength = USB_DT_ENDPOINT_SIZE,
+  .bDescriptorType = USB_DT_ENDPOINT,
+  .bEndpointAddress = ENDPOINT2,
+  .bmAttributes = USB_ENDPOINT_ATTR_BULK,
+  .wMaxPacketSize = 64,
+  .bInterval = 1,
 }};  
 
 /*
@@ -80,7 +88,7 @@ static const struct usb_interface_descriptor bulk_iface[] = {{
   .bDescriptorType = USB_DT_INTERFACE,
   .bInterfaceNumber = 0,
   .bAlternateSetting = 0,
-  .bNumEndpoints = 2,
+  .bNumEndpoints = 3,
   .bInterfaceClass = 0xFF,
   .bInterfaceSubClass = 0xFF,
   .bInterfaceProtocol = 0x0,
@@ -159,7 +167,8 @@ static void ep1_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
   int r;
   uint8_t temp;
   uint8_t buf[64];
-  char message[32] = "OK";
+  char *message;
+  message = malloc(64);
   int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
   if (len == 2){
 	switch (buf[1]){
@@ -193,19 +202,25 @@ if (buf[1] >= 6)
   			temp = i2c1_read(I2C1, PCA_9532, 6);
 			temp = temp >> ((buf[2]-1) * 2);
 			temp &= 3;
-  			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
+			message = "LED1";
+  usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 4 );
+			  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
 		}else if((buf[2] > 4) & (buf[2] <= 8))
 		{
   			temp = i2c1_read(I2C1, PCA_9532, 7);
 			temp = temp >> ((buf[2]-5) * 2);
 			temp &= 3;
-  			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
+			message = "LED2";
+  usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 4 );
+			  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
 		}else if((buf[2] > 8) & (buf[2] <= 12))
 		{
   			temp = i2c1_read(I2C1, PCA_9532, 8);
 			temp = temp >> ((buf[2]-9) * 2);
 			temp &= 3;
-  			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
+			message = "LED3";
+  usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 4 );
+			  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
 		}else
 		{
 
@@ -266,7 +281,7 @@ if (buf[1] >= 6)
 	  }
   i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
   }
-  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &message, 2 );
+  r = usbd_ep_write_packet( usbd_dev, ENDPOINT2, &message, 2 );
   /* ZLP */
   if( len == 64 )
     usbd_ep_write_packet( usbd_dev, ENDPOINT1, NULL, 0 );
@@ -280,6 +295,15 @@ static void ep82_data_tx_cb(usbd_device *usbd_dev, uint8_t ep)
   ( void )usbd_dev;
 }
 
+static void ep83_data_tx_cb(usbd_device *usbd_dev, uint8_t ep)
+{
+  ( void )ep;
+  ( void )usbd_dev;
+  gpio_toggle( GPIOD, GPIO13 );
+  /*       uint8_t temp = 10; */
+  /* usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 ); */
+}
+
 
 static void ep3_int_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
@@ -288,7 +312,6 @@ static void ep3_int_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 
   unsigned char buf = 0;
   int len = usbd_ep_read_packet(usbd_dev, 0x03, &buf, sizeof( unsigned char ));
-  gpio_toggle( GPIOD, GPIO13 );
   printf( "int r %d, %c\n", len, buf );
 }
 
@@ -300,6 +323,8 @@ static void vendorspec_set_config(usbd_device *usbd_dev, uint16_t wValue)
                                      ep1_data_rx_cb );
   usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64,
                                      ep82_data_tx_cb );
+  usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_BULK, 64,
+                                     ep83_data_tx_cb );
   usbd_ep_setup(usbd_dev, 0x3, USB_ENDPOINT_ATTR_INTERRUPT, 1,
                                      ep3_int_rx_cb );
 
