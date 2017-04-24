@@ -163,176 +163,227 @@ static int vendorspec_control_request(usbd_device *usbd_dev,
 
 static void ep1_data_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
-  (void)ep;
-  int r;
-  uint8_t temp;
-  uint8_t buf[64];
-  char *message;
-  message = malloc(64);
-  int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
-  if (len == 2){
-	switch (buf[1]){
-		case 2:{
-		temp = i2c1_read(I2C1, PCA_9532, 2);
-  		r = usbd_ep_write_packet( usbd_dev,ENDPOINT1,&temp, 1);
-		       }
-		       break;
-		case 3:{
-  		temp = i2c1_read(I2C1, PCA_9532, 3); 
-  		r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
-		       }
-		       break;
-		case 4:{
-  		temp = i2c1_read(I2C1, PCA_9532, 4);
-  		r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
-		       }
-		       break;
-		case 5:{
-  		temp = i2c1_read(I2C1, PCA_9532, 5);
-  		r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
-		       }
-		       break;
-	}
-  }
-  if (len == 3){
-if (buf[1] >= 6)
-	{
-		if (buf[2] <= 4)
-		{
-  			temp = i2c1_read(I2C1, PCA_9532, 6);
-			temp = temp >> ((buf[2]-1) * 2);
-			temp &= 3;
-			message = "LED1";
-  usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 4 );
-			  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
-		}else if((buf[2] > 4) & (buf[2] <= 8))
-		{
-  			temp = i2c1_read(I2C1, PCA_9532, 7);
-			temp = temp >> ((buf[2]-5) * 2);
-			temp &= 3;
-			message = "LED2";
-  usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 4 );
-			  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
-		}else if((buf[2] > 8) & (buf[2] <= 12))
-		{
-  			temp = i2c1_read(I2C1, PCA_9532, 8);
-			temp = temp >> ((buf[2]-9) * 2);
-			temp &= 3;
-			message = "LED3";
-  usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 4 );
-			  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 );
-		}else
-		{
-
+	(void)ep;
+	int r;
+	uint8_t temp;
+	uint8_t buf[64];
+	char *message;
+	message = malloc(64);
+	int len = usbd_ep_read_packet(usbd_dev, 0x01, buf, 64);
+	if (len == 2){
+		switch (buf[1]){
+			case 2:{
+				       temp = i2c1_read(I2C1, PCA_9532, 2);
+				       message = "PCS0 value is ";
+				       usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 14 );
+				       r = usbd_ep_write_packet( usbd_dev,ENDPOINT1,&temp, 1);
+			       }
+			       break;
+			case 3:{
+				       temp = i2c1_read(I2C1, PCA_9532, 3); 
+				       message = "PWM0 value is ";
+				       usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 14 );
+				       r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
+			       }
+			       break;
+			case 4:{
+				       temp = i2c1_read(I2C1, PCA_9532, 4);
+				       message = "PCS1 value is ";
+				       usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 14 );
+				       r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
+			       }
+			       break;
+			case 5:{
+				       temp = i2c1_read(I2C1, PCA_9532, 5);
+				       message = "PWM1 value is ";
+				       usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 14 );
+				       r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 1);
+			       }
+			       break;
 		}
-		
-	}else{
-  i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
-  gpio_toggle(LEDPORT, LED);
-  temp = i2c1_read(I2C1, PCA_9532, buf[1]);
-  r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1);
 	}
-  }else if (len == 4)
-  {
-	  if(buf[3] == 0){
-	
-	buf[1] = buf[1] + (buf[2]-1)/4;
-	if (buf[2] == 1 || buf[2] ==5 || buf[2] == 9){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0xfc;
-		buf[2] |= 2;	
-	  }else if (buf[2] == 2 || buf[2] == 6 || buf[2] == 10){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0xf3;
-		buf[2] |= 2 << 2;
-	}
-	else if (buf[2] == 3 || buf[2] == 7 || buf[2] == 11){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0xcf;
-		buf[2] |= 2 << 4;
-	}
-  	else if (buf[2] == 4 || buf[2] == 8 || buf[2] == 12){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0x3f;
-		buf[2] |= 2 << 6;
-	}
-	  }else if(buf[3] == 1){
+	else if (len == 3){
+		if (buf[1] >= 6)
+		{
+			if (buf[2] <= 4)
+			{
+				temp = i2c1_read(I2C1, PCA_9532, 6);
+				temp = temp >> ((buf[2]-1) * 2);
+				temp &= 3;
+			}else if((buf[2] > 4) & (buf[2] <= 8))
+			{
+				temp = i2c1_read(I2C1, PCA_9532, 7);
+				temp = temp >> ((buf[2]-5) * 2);
+				temp &= 3;
+			}else if((buf[2] > 8) & (buf[2] <= 12))
+			{
+				temp = i2c1_read(I2C1, PCA_9532, 8);
+				temp = temp >> ((buf[2]-9) * 2);
+				temp &= 3;
+			}else
+			{
+				message = "Invalid LED number";
+				usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 18 );
+				r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 0 );
+			}
+			if(temp == 2){
 
-	buf[1] = buf[1] + (buf[2]-1)/4;
-	if (buf[2] == 1 || buf[2] ==5 || buf[2] == 9){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0xfc;
-		buf[2] |= 3;	
-	}else if (buf[2] == 2 || buf[2] == 6 || buf[2] == 10){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0xf3;
-		buf[2] |= 3 << 2;
-	}
-	else if (buf[2] == 3 || buf[2] == 7 || buf[2] == 11){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0xcf;
-		buf[2] |= 3 << 4;
-	}
-  	else if (buf[2] == 4 || buf[2] == 8 || buf[2] == 12){
-  	buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
-		buf[2] &= 0x3f;
-		buf[2] |= 3 << 6;
-	}
-	  }
-  i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
-  }
-  r = usbd_ep_write_packet( usbd_dev, ENDPOINT2, &message, 2 );
-  /* ZLP */
-  if( len == 64 )
-    usbd_ep_write_packet( usbd_dev, ENDPOINT1, NULL, 0 );
+				message = "LED is blinking at psc0 rate";
+				usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 28 );
+				r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 0 );
+			}else if (temp == 3){
+				message = "LED is blinking at psc1 rate";
+				usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 28 );
+				r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 0 );
 
-  tr_round++;
+			}else if ((temp !=2) & (temp !=3)){
+				message = "LED is not configured yet";
+				usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 25 );
+				r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 0 );
+			
+			}	
+		}else{
+			i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
+			gpio_toggle(LEDPORT, LED);
+			temp = i2c1_read(I2C1, PCA_9532, buf[1]);
+			switch (buf[1])
+			{
+				case 2:
+				message = "PCS0 is set to ";
+				break;
+				case 3:
+				message = "PWM0 is set to ";
+				break;
+				case 4:
+				message = "PCS1 is set to ";
+				break;
+				case 5:
+				message = "PWM1 is set to ";
+				break;
+
+			}
+			usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 15 );
+			r = usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1);
+		}
+	}else if (len == 4)
+	{
+		if(buf[3] == 0){
+
+			buf[1] = buf[1] + (buf[2]-1)/4;
+			if (buf[2] == 1 || buf[2] ==5 || buf[2] == 9){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0xfc;
+				buf[2] |= 2;	
+			message = "LED configured    ";
+			}else if (buf[2] == 2 || buf[2] == 6 || buf[2] == 10){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0xf3;
+				buf[2] |= 2 << 2;
+			message = "LED configured    ";
+			}
+			else if (buf[2] == 3 || buf[2] == 7 || buf[2] == 11){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0xcf;
+				buf[2] |= 2 << 4;
+			message = "LED configured    ";
+			}
+			else if (buf[2] == 4 || buf[2] == 8 || buf[2] == 12){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0x3f;
+				buf[2] |= 2 << 6;
+			message = "LED configured    ";
+			}else{
+			message = "Invalid LED number";
+
+			}
+			i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
+			usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 18 );
+			usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 0 );
+		}else if(buf[3] == 1){
+
+			buf[1] = buf[1] + (buf[2]-1)/4;
+			if (buf[2] == 1 || buf[2] ==5 || buf[2] == 9){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0xfc;
+				buf[2] |= 3;	
+			message = "LED configured    ";
+			}else if (buf[2] == 2 || buf[2] == 6 || buf[2] == 10){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0xf3;
+				buf[2] |= 3 << 2;
+			message = "LED configured    ";
+			}
+			else if (buf[2] == 3 || buf[2] == 7 || buf[2] == 11){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0xcf;
+				buf[2] |= 3 << 4;
+			message = "LED configured    ";
+			}
+			else if (buf[2] == 4 || buf[2] == 8 || buf[2] == 12){
+				buf[2] = i2c1_read(I2C1, PCA_9532, buf[1]);
+				buf[2] &= 0x3f;
+				buf[2] |= 3 << 6;
+			message = "LED configured    ";
+			}else{
+			message = "Invalid LED number";
+
+			}
+			i2c1_write(I2C1, PCA_9532, buf[1], buf[2]);
+			usbd_ep_write_packet( usbd_dev, ENDPOINT2, message, 18 );
+			usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp, 0 );
+		}
+	}
+	/* ZLP */
+	if( len == 64 )
+		usbd_ep_write_packet( usbd_dev, ENDPOINT1, NULL, 0 );
+
+	tr_round++;
 }
 
 static void ep82_data_tx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
-  ( void )ep;
-  ( void )usbd_dev;
+	( void )ep;
+	( void )usbd_dev;
 }
 
 static void ep83_data_tx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
-  ( void )ep;
-  ( void )usbd_dev;
-  gpio_toggle( GPIOD, GPIO13 );
-  /*       uint8_t temp = 10; */
-  /* usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 ); */
+	( void )ep;
+	( void )usbd_dev;
+	gpio_toggle( GPIOD, GPIO13 );
+	/*       uint8_t temp = 10; */
+	/* usbd_ep_write_packet( usbd_dev, ENDPOINT1, &temp , 1 ); */
 }
 
 
 static void ep3_int_rx_cb(usbd_device *usbd_dev, uint8_t ep)
 {
-  ( void )ep;
-  ( void )usbd_dev;
+	( void )ep;
+	( void )usbd_dev;
 
-  unsigned char buf = 0;
-  int len = usbd_ep_read_packet(usbd_dev, 0x03, &buf, sizeof( unsigned char ));
-  printf( "int r %d, %c\n", len, buf );
+	unsigned char buf = 0;
+	int len = usbd_ep_read_packet(usbd_dev, 0x03, &buf, sizeof( unsigned char ));
+	printf( "int r %d, %c\n", len, buf );
 }
 
 static void vendorspec_set_config(usbd_device *usbd_dev, uint16_t wValue)
 {
-  (void)wValue;
-  
-  usbd_ep_setup(usbd_dev, 0x1 , USB_ENDPOINT_ATTR_BULK, 64,
-                                     ep1_data_rx_cb );
-  usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64,
-                                     ep82_data_tx_cb );
-  usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_BULK, 64,
-                                     ep83_data_tx_cb );
-  usbd_ep_setup(usbd_dev, 0x3, USB_ENDPOINT_ATTR_INTERRUPT, 1,
-                                     ep3_int_rx_cb );
+	(void)wValue;
 
-  usbd_register_control_callback(
-       usbd_dev,
-       USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
-       USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
-       vendorspec_control_request);
+	usbd_ep_setup(usbd_dev, 0x1 , USB_ENDPOINT_ATTR_BULK, 64,
+			ep1_data_rx_cb );
+	usbd_ep_setup(usbd_dev, 0x82, USB_ENDPOINT_ATTR_BULK, 64,
+			ep82_data_tx_cb );
+	usbd_ep_setup(usbd_dev, 0x83, USB_ENDPOINT_ATTR_BULK, 64,
+			ep83_data_tx_cb );
+	usbd_ep_setup(usbd_dev, 0x3, USB_ENDPOINT_ATTR_INTERRUPT, 1,
+			ep3_int_rx_cb );
+
+	usbd_register_control_callback(
+			usbd_dev,
+			USB_REQ_TYPE_CLASS | USB_REQ_TYPE_INTERFACE,
+			USB_REQ_TYPE_TYPE | USB_REQ_TYPE_RECIPIENT,
+			vendorspec_control_request);
 }
 
 static void gpio_setup(void)
@@ -343,7 +394,7 @@ static void gpio_setup(void)
 
 	/* Set GPIO12 (in GPIO port C) to 'output push-pull'. */
 	gpio_set_mode(LEDPORT, GPIO_MODE_OUTPUT_2_MHZ,
-		      GPIO_CNF_OUTPUT_PUSHPULL, LED);
+			GPIO_CNF_OUTPUT_PUSHPULL, LED);
 }
 
 static void rcc_setup(void)
@@ -359,16 +410,16 @@ int main(void)
 	gpio_setup();
 	rcc_setup();
 	i2c1_setup();
-	
-  /* i2c1_write(I2C1, PCA_9532, 7, 0xfe); */
+
+	/* i2c1_write(I2C1, PCA_9532, 7, 0xfe); */
 	usbd_dev = usbd_init(&otgfs_usb_driver, &dev, &config,
 			usb_strings, 3,usbd_control_buffer, sizeof(usbd_control_buffer));
 
 	usbd_register_set_config_callback(usbd_dev, vendorspec_set_config);
-    
-    while (1) {
-	usbd_poll(usbd_dev);
-  }
-	
+
+	while (1) {
+		usbd_poll(usbd_dev);
+	}
+
 	return 0;
 }

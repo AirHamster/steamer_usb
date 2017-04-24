@@ -12,85 +12,85 @@ void i2c1_ev_isr(void)
 	uint32_t reg32 __attribute__((unused));
 	/* If writing proceed*/
 	if (i2c.w== 1){
-	/*Sending address*/
-	if ((I2C_SR1(I2C1) & I2C_SR1_SB)){
-		i2c_send_data(I2C1, i2c.address & 0xfe);
-		return;
-		}
-	 /*When address sent, send register addr*/
-	if ((I2C_SR1(I2C1) & I2C_SR1_ADDR)){
-		reg32 = I2C_SR2(I2C1);
-		i2c_send_data(I2C1, i2c.reg_addr);
-		return;
-		}
-	/*Send data while lenth is valid*/
-	if ((I2C_SR1(I2C1) & I2C_SR1_BTF)){
-		i2c_send_data(I2C1, *i2c.data_pointer);
-		i2c.data_pointer++;
-
-	/* If all bytes have been sent */
-		if (i2c.lenth-- == 0){
-			i2c_send_stop(I2C1);
-			i2c.busy = 0;
+		/*Sending address*/
+		if ((I2C_SR1(I2C1) & I2C_SR1_SB)){
+			i2c_send_data(I2C1, i2c.address & 0xfe);
 			return;
+		}
+		/*When address sent, send register addr*/
+		if ((I2C_SR1(I2C1) & I2C_SR1_ADDR)){
+			reg32 = I2C_SR2(I2C1);
+			i2c_send_data(I2C1, i2c.reg_addr);
+			return;
+		}
+		/*Send data while lenth is valid*/
+		if ((I2C_SR1(I2C1) & I2C_SR1_BTF)){
+			i2c_send_data(I2C1, *i2c.data_pointer);
+			i2c.data_pointer++;
+
+			/* If all bytes have been sent */
+			if (i2c.lenth-- == 0){
+				i2c_send_stop(I2C1);
+				i2c.busy = 0;
+				return;
 			}
 		}
 	}
 	/*If reading needed*/
 	else if (i2c.r == 1){
-	if (i2c.rs == 0){
-	/*Start send*/
-	if ((I2C_SR1(I2C1) & I2C_SR1_SB)){
-		i2c_send_data(I2C1, (i2c.address & 0xfe));
-		return;
-		}
-	 
-	 /*When address sent, send register addr*/
-	if ((I2C_SR1(I2C1) & I2C_SR1_ADDR)){
-		reg32 = I2C_SR2(I2C1);
-		i2c_send_data(I2C1, i2c.reg_addr);
-		return;
-		}
-	/*When reg addr send, repeat start	*/
-	if ((I2C_SR1(I2C1) & I2C_SR1_BTF) != 0){
-		i2c_send_start(I2C1);
-		i2c.rs = 1;	//repeated start send
-		return;
-		}
-	}
-	/*We set i2c.rs, so now can read data from i2c*/
-	else{
-		if((I2C_SR1(I2C1) & I2C_SR1_SB)){
-			i2c_send_data(I2C1, (i2c.address | 0x01));
-			return;
-			}
-		if ((I2C_SR1(I2C1) & I2C_SR1_ADDR)){
-			i2c_enable_ack(I2C1);
-			return;
-			}
-		if ((I2C_SR1(I2C1) & I2C_SR1_BTF)){
-			*i2c.data_pointer = i2c_get_data(I2C1);
-			i2c.data_pointer++;
-			
-			if (--i2c.lenth == 1){
-				i2c_nack_current(I2C1);
+		if (i2c.rs == 0){
+			/*Start send*/
+			if ((I2C_SR1(I2C1) & I2C_SR1_SB)){
+				i2c_send_data(I2C1, (i2c.address & 0xfe));
 				return;
+			}
+
+			/*When address sent, send register addr*/
+			if ((I2C_SR1(I2C1) & I2C_SR1_ADDR)){
+				reg32 = I2C_SR2(I2C1);
+				i2c_send_data(I2C1, i2c.reg_addr);
+				return;
+			}
+			/*When reg addr send, repeat start	*/
+			if ((I2C_SR1(I2C1) & I2C_SR1_BTF) != 0){
+				i2c_send_start(I2C1);
+				i2c.rs = 1;	//repeated start send
+				return;
+			}
+		}
+		/*We set i2c.rs, so now can read data from i2c*/
+		else{
+			if((I2C_SR1(I2C1) & I2C_SR1_SB)){
+				i2c_send_data(I2C1, (i2c.address | 0x01));
+				return;
+			}
+			if ((I2C_SR1(I2C1) & I2C_SR1_ADDR)){
+				i2c_enable_ack(I2C1);
+				return;
+			}
+			if ((I2C_SR1(I2C1) & I2C_SR1_BTF)){
+				*i2c.data_pointer = i2c_get_data(I2C1);
+				i2c.data_pointer++;
+
+				if (--i2c.lenth == 1){
+					i2c_nack_current(I2C1);
+					return;
 				}
 			}	
-		if ((I2C_SR1(I2C1) & I2C_SR1_RxNE) !=0) {
-			i2c_send_stop(I2C1);
-			i2c.busy = 0;
+			if ((I2C_SR1(I2C1) & I2C_SR1_RxNE) !=0) {
+				i2c_send_stop(I2C1);
+				i2c.busy = 0;
 			}	
+		}
 	}
-}
 }
 
 void i2c1_er_isr(void)
 {
 	/*TODO errors handling*/
 
- 	gpio_set(LEDPORT, LED);
-	
+	gpio_set(LEDPORT, LED);
+
 }
 
 void i2c1_setup(void)
@@ -101,8 +101,8 @@ void i2c1_setup(void)
 
 	/* Set alternate functions for the SCL and SDA pins of I2C2. */
 	gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ,
-		      GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
-		      GPIO_I2C1_SCL | GPIO_I2C1_SDA);
+			GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
+			GPIO_I2C1_SCL | GPIO_I2C1_SDA);
 
 	/* Disable the I2C before changing any configuration. */
 	i2c_peripheral_disable(I2C1);
@@ -172,7 +172,7 @@ uint8_t i2c1_read(uint32_t i2c, uint8_t address, uint8_t reg_addr)
 
 	/* Waiting for START is send and switched to master mode. */
 	while (!((I2C_SR1(i2c) & I2C_SR1_SB)
-		& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
+				& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
 
 	/* Say to what address we want to talk to. */
 	/* Yes, WRITE is correct - for selecting register in STTS75. */
@@ -199,7 +199,7 @@ uint8_t i2c1_read(uint32_t i2c, uint8_t address, uint8_t reg_addr)
 
 	/* Waiting for START is send and switched to master mode. */
 	while (!((I2C_SR1(i2c) & I2C_SR1_SB)
-		& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
+				& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
 
 	/* Say to what address we want to talk to. */
 	/* i2c_send_7bit_address(i2c, address, I2C_READ);  */
@@ -246,7 +246,7 @@ void i2c1_write(uint32_t i2c, uint8_t address, uint8_t reg_adr, uint8_t data )
 
 	/* Waiting for START is send and switched to master mode. */
 	while (!((I2C_SR1(i2c) & I2C_SR1_SB)
-		& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
+				& (I2C_SR2(i2c) & (I2C_SR2_MSL | I2C_SR2_BUSY))));
 
 	/* Send destination address. */
 	//i2c_send_7bit_address(i2c, sensor, I2C_WRITE);
