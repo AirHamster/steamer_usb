@@ -15,8 +15,6 @@ usb_slave.o: usb_slave.c \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/lock.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/cdefs.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/machine/stdlib.h \
- /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/errno.h \
- /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/errno.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/stdio.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/lib/gcc/arm-none-eabi/6.3.1/include/stdarg.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/types.h \
@@ -24,10 +22,6 @@ usb_slave.o: usb_slave.c \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/_pthreadtypes.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/machine/types.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/stdio.h \
- /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/string.h \
- /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/string.h \
- /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/unistd.h \
- /opt/gcc-arm-none-eabi-6-2017-q1-update/arm-none-eabi/include/sys/unistd.h \
  libopencm3/include/libopencm3/stm32/rcc.h \
  libopencm3/include/libopencm3/cm3/common.h \
  /opt/gcc-arm-none-eabi-6-2017-q1-update/lib/gcc/arm-none-eabi/6.3.1/include/stdint.h \
